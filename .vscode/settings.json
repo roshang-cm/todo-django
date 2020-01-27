@@ -1,0 +1,8 @@
+{
+  "python.linting.enabled": true,
+  "python.pythonPath": "/home/roshang/pythonenv/bin/python",
+  "python.linting.pylintEnabled": true,
+  "python.linting.pylintPath": "/home/roshang/pythonenv/bin/pylint",
+  "python.linting.pylintArgs": ["--load-plugins=pylint_django"],
+  "python.formatting.provider": "autopep8"
+}

@@ -1,0 +1,222 @@
+{% extends 'todo/base.html' %} {% block content %} {% load static %}
+
+<form
+  action="/todo/change"
+  id="change-status-form"
+  method="POST"
+  style="display: none;"
+>
+  {% csrf_token %} {{ change_status_form }}
+</form>
+
+<form
+  action="/todo/?/delete"
+  id="delete-todo-form"
+  method="POST"
+  style="display: none;"
+>
+  {% csrf_token %}
+</form>
+
+<div class="container">
+  <div class="pure-g">
+    <div class="pure-u-1-3">
+      <div class="wrapper">
+        <div class="overlay"></div>
+        <div
+          class="card"
+          ondragover="onDragOver(event)"
+          ondrop="drop(event)"
+          ondragleave="onDragLeave(event)"
+          id="pending-holder"
+        >
+          <div class="section-header">
+            <span>
+              Pending Tasks ({{ new_todos | length }})
+            </span>
+            <button onclick="toggleAddFormModal()">Add new task</button>
+          </div>
+          <hr />
+          <div class="list-holder">
+            {% for todo in new_todos %}
+
+            <div
+              class="todo"
+              draggable="true"
+              id="{{todo.id}}"
+              ondragstart="drag(event)"
+            >
+              <span class="todo-text">{{ todo.text }}</span>
+              <span class="close-button" onclick="deleteTodo('{{ todo.id }}');">
+                <img src="{% static 'img/close.svg' %}" />
+              </span>
+            </div>
+
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pure-u-1-3">
+      <div class="wrapper">
+        <div class="overlay"></div>
+        <div
+          class="card"
+          ondragover="onDragOver(event)"
+          ondragleave="onDragLeave(event)"
+          ondrop="drop(event)"
+          id="working-holder"
+        >
+          <div class="section-header">
+            <span>
+              In-Progress Tasks ({{ working_todos | length }})
+            </span>
+          </div>
+          <hr />
+          <div class="list-holder">
+            {% for todo in working_todos %}
+
+            <div
+              class="todo"
+              draggable="true"
+              id="{{todo.id}}"
+              ondragstart="drag(event)"
+            >
+              <span class="todo-text">{{ todo.text }}</span>
+              <span class="close-button" onclick="deleteTodo('{{ todo.id }}');">
+                <img src="{% static 'img/close.svg' %}" />
+              </span>
+            </div>
+
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pure-u-1-3">
+      <div class="wrapper">
+        <div class="overlay"></div>
+        <div
+          class="card"
+          id="done-holder"
+          ondragover="onDragOver(event)"
+          ondragleave="onDragLeave(event)"
+          ondrop="drop(event)"
+        >
+          <div class="section-header">
+            <span>
+              Completed Tasks ({{ done_todos | length }})
+            </span>
+          </div>
+          <hr />
+          <div class="list-holder">
+            {% for todo in done_todos %}
+
+            <div
+              class="todo"
+              draggable="true"
+              id="{{todo.id}}"
+              ondragstart="drag(event)"
+            >
+              <span class="todo-text">{{ todo.text }}</span>
+              <span class="close-button" onclick="deleteTodo('{{ todo.id }}');">
+                <img src="{% static 'img/close.svg' %}" />
+              </span>
+            </div>
+
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="add-form-modal" onclick="toggleAddFormModal()">
+  <div class="modal-content" onclick="stopPropagation(event);">
+    <div class="section-header">
+      <h2>Add a new task</h2>
+      <button onclick="toggleAddFormModal()">Cancel</button>
+    </div>
+    <form id="add-form" action="/todo/add" method="POST">
+      {% csrf_token %}
+      <div>
+        {{ add_todo_form }}
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block script %}
+
+<script>
+  function stopPropagation(event) {
+    event.stopPropagation();
+  }
+  function deleteTodo(todo_id) {
+    if (!confirm("Are you sure you want to delete this todo?")) return;
+    const url = `/todo/${todo_id}/delete`;
+    let formElement = document.getElementById("delete-todo-form");
+    formElement.setAttribute("action", url);
+    formElement.submit();
+  }
+  function submitChangeStatusForm(todo_id, new_status) {
+    const url = `/todo/${todo_id}/status`;
+    let formElement = document.getElementById("change-status-form");
+    let selectStatusElement = formElement.getElementsByTagName("select");
+    formElement.setAttribute("action", url);
+    selectStatusElement[0].value = new_status;
+    formElement.submit();
+  }
+  //Will fire when the todo-list-item is drag start
+  let isAddFormModalOpen = false;
+  function toggleAddFormModal() {
+    isAddFormModalOpen = !isAddFormModalOpen;
+    const addModalElement = document.querySelector("#add-form-modal");
+    const addFormElement = document.getElementById("add-form");
+    addModalElement.style.display = isAddFormModalOpen ? "block" : "none";
+    addFormElement.reset();
+  }
+  function drag(event) {
+    event.dataTransfer.setData("text", event.target.id);
+    console.log("Drag has started");
+  }
+
+  //Will fire when the item has been dropped
+  function drop(event) {
+    event.preventDefault();
+    let data = event.dataTransfer.getData("text");
+    event.target.classList.remove("drag-on");
+    console.log(`Item ${data} dropped on ${event.target.id}`);
+    switch (event.target.id) {
+      case "pending-holder": {
+        submitChangeStatusForm(data, "new");
+        break;
+      }
+      case "working-holder": {
+        submitChangeStatusForm(data, "working");
+        break;
+      }
+      case "done-holder": {
+        submitChangeStatusForm(data, "done");
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  //Will fire when the item is dragged on top of target
+  function onDragOver(event) {
+    event.preventDefault();
+    let element = event.target;
+    element.classList.add("drag-on");
+  }
+
+  //Will fire when the dragged item has left the target area
+  function onDragLeave(event) {
+    event.preventDefault();
+    let element = event.target;
+    element.classList.remove("drag-on");
+  }
+</script>
+{% endblock %}

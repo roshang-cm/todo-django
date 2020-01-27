@@ -1,0 +1,16 @@
+{% extends 'todo/base.html' %} {% block title %} Sign Up {% endblock %}
+<!-- -->{% block content %}
+
+<form action="/todo/signup" method="post">
+  <h1>Sign Up</h1>
+  <h3><a href="{%url 'todo:login_view' %}">Existing users, log in</a></h3>
+
+  <hr />
+  {% if error %}
+  <span style="color: red;">{{ error }} </span>
+  {% endif %} {% csrf_token %}
+  <input type="text" name="username" placeholder="Username" required />
+  <input type="password" name="password" placeholder="Password" required />
+  <button type="submit">Sign Up</button>
+</form>
+{% endblock %}
